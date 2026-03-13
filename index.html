@@ -1,0 +1,1524 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>אזעקה - משחק הימורים בזמן אמת</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #ff3333;
+            --primary-dark: #cc0000;
+            --secondary: #1a1a2e;
+            --secondary-light: #16213e;
+            --accent: #0f3460;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --text-light: #f5f5f5;
+            --text-dark: #333;
+            --border: #333;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, #1a2a4a 100%);
+            color: var(--text-light);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Animation keyframes */
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        @keyframes glow {
+            0%, 100% { 
+                box-shadow: 0 0 10px rgba(255, 51, 51, 0.3);
+            }
+            50% { 
+                box-shadow: 0 0 20px rgba(255, 51, 51, 0.6);
+            }
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Auth Screen */
+        .auth-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-box {
+            background: var(--bg-card);
+            border: 2px solid var(--primary);
+            border-radius: 20px;
+            padding: 50px;
+            max-width: 450px;
+            width: 100%;
+            animation: slideInRight 0.6s ease-out;
+            box-shadow: 0 20px 60px rgba(255, 51, 51, 0.2);
+        }
+
+        .auth-box h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff3333, #ff6666);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .auth-box p {
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 13px;
+            color: #ccc;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            border-radius: 8px;
+            color: var(--text-light);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 51, 51, 0.1);
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), #ff6666);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 51, 51, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .toggle-auth {
+            margin-top: 20px;
+            text-align: center;
+            font-size: 13px;
+            color: #999;
+        }
+
+        .toggle-auth a {
+            color: var(--primary);
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        /* Main App */
+        .app-container {
+            display: none;
+            min-height: 100vh;
+        }
+
+        .app-container.active {
+            display: block;
+        }
+
+        .navbar {
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 51, 51, 0.2);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideDown 0.4s ease-out;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar-brand {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .navbar-right {
+            display: flex;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .balance-display {
+            background: rgba(255, 51, 51, 0.1);
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(255, 51, 51, 0.3);
+            font-weight: 600;
+            animation: glow 3s infinite;
+        }
+
+        .user-name {
+            color: #ccc;
+            font-size: 14px;
+        }
+
+        .logout-btn {
+            padding: 8px 16px;
+            background: rgba(255, 51, 51, 0.2);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Main Content */
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+            padding: 20px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 51, 51, 0.2);
+            padding-bottom: 15px;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            color: #999;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            border-bottom: 2px solid transparent;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        /* Betting Section */
+        .betting-section {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            animation: slideInLeft 0.6s ease-out;
+        }
+
+        .section-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 24px;
+            background: var(--primary);
+            border-radius: 2px;
+        }
+
+        /* Map */
+        .map-container {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 25px;
+            height: 400px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .map-cities {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+            height: 100%;
+        }
+
+        .city-btn {
+            background: rgba(255, 51, 51, 0.05);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            color: var(--text-light);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .city-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .city-btn:hover::before {
+            left: 100%;
+        }
+
+        .city-btn:hover {
+            border-color: var(--primary);
+            background: rgba(255, 51, 51, 0.15);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(255, 51, 51, 0.2);
+        }
+
+        .city-btn.selected {
+            background: linear-gradient(135deg, var(--primary), #ff6666);
+            border-color: var(--primary);
+            box-shadow: 0 0 20px rgba(255, 51, 51, 0.5);
+            animation: pulse 1.5s infinite;
+        }
+
+        /* Form */
+        .bet-form {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 25px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 51, 51, 0.2);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-row.full {
+            grid-template-columns: 1fr;
+        }
+
+        .form-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-field label {
+            font-size: 12px;
+            color: #ccc;
+            margin-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-field input,
+        .form-field select {
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            color: var(--text-light);
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-field input:focus,
+        .form-field select:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 51, 51, 0.1);
+            box-shadow: 0 0 15px rgba(255, 51, 51, 0.2);
+        }
+
+        .form-field input::placeholder {
+            color: #666;
+        }
+
+        .amount-preview {
+            font-size: 12px;
+            color: var(--success);
+            margin-top: 5px;
+        }
+
+        .rules-box {
+            background: rgba(255, 193, 7, 0.1);
+            border-left: 3px solid var(--warning);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            line-height: 1.6;
+        }
+
+        .rules-box strong {
+            color: var(--warning);
+        }
+
+        .place-bet-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary), #ff6666);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 20px;
+        }
+
+        .place-bet-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(255, 51, 51, 0.4);
+        }
+
+        .place-bet-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Real-time Alerts */
+        .alerts-section {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            animation: slideInLeft 0.6s ease-out 0.1s both;
+        }
+
+        .alert-item {
+            background: rgba(255, 51, 51, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .alert-time {
+            font-size: 11px;
+            color: #999;
+        }
+
+        .alert-city {
+            font-weight: 700;
+            color: var(--primary);
+            margin-top: 5px;
+        }
+
+        /* Bets History */
+        .bets-history {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            border-radius: 15px;
+            padding: 30px;
+            animation: slideInLeft 0.6s ease-out 0.2s both;
+        }
+
+        .bet-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 10px;
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .bet-card:hover {
+            border-color: var(--primary);
+            background: rgba(255, 51, 51, 0.05);
+        }
+
+        .bet-icon {
+            font-size: 28px;
+        }
+
+        .bet-details {
+            display: grid;
+            gap: 8px;
+        }
+
+        .bet-location {
+            font-weight: 700;
+            color: var(--text-light);
+            font-size: 15px;
+        }
+
+        .bet-time {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .bet-amount {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .bet-status {
+            text-align: right;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: flex-end;
+        }
+
+        .status-badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: var(--warning);
+            animation: pulse 1.5s infinite;
+        }
+
+        .status-win {
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+        }
+
+        .status-loss {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+
+        .payout {
+            font-weight: 700;
+            font-size: 14px;
+        }
+
+        /* Leaderboard */
+        .leaderboard-container {
+            background: var(--bg-card);
+            border: 1px solid rgba(255, 51, 51, 0.2);
+            border-radius: 15px;
+            padding: 25px;
+            position: sticky;
+            top: 80px;
+        }
+
+        .leaderboard-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .leaderboard-item {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 12px;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .leaderboard-item:hover {
+            background: rgba(255, 51, 51, 0.1);
+            border: 1px solid rgba(255, 51, 51, 0.3);
+        }
+
+        .rank {
+            font-weight: 700;
+            font-size: 16px;
+            width: 30px;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .rank.gold {
+            color: #ffd700;
+            font-size: 20px;
+        }
+
+        .rank.silver {
+            color: #c0c0c0;
+            font-size: 18px;
+        }
+
+        .rank.bronze {
+            color: #cd7f32;
+            font-size: 18px;
+        }
+
+        .leaderboard-user-name {
+            font-size: 13px;
+            color: #ccc;
+        }
+
+        .leaderboard-balance {
+            font-weight: 700;
+            color: var(--success);
+            font-size: 13px;
+        }
+
+        /* Daily Bonus */
+        .daily-bonus {
+            background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.05));
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+            text-align: center;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        .daily-bonus.available {
+            animation: glow 2s infinite, slideDown 0.4s ease-out;
+            box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .daily-bonus p {
+            margin-bottom: 10px;
+            color: var(--success);
+            font-weight: 600;
+        }
+
+        .daily-bonus button {
+            padding: 10px 20px;
+            background: var(--success);
+            color: var(--text-dark);
+            border: none;
+            border-radius: 6px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .daily-bonus button:hover:not(:disabled) {
+            transform: scale(1.05);
+        }
+
+        .daily-bonus button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Notifications */
+        .notification {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--primary);
+            border-radius: 10px;
+            padding: 20px;
+            max-width: 350px;
+            animation: slideInRight 0.4s ease-out;
+            box-shadow: 0 10px 30px rgba(255, 51, 51, 0.3);
+            z-index: 1000;
+        }
+
+        .notification.success {
+            border-color: var(--success);
+        }
+
+        .notification.error {
+            border-color: #ef4444;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1200px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            .leaderboard-container {
+                position: static;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .auth-box {
+                padding: 30px;
+            }
+
+            .map-cities {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+
+            .betting-section {
+                padding: 20px;
+            }
+
+            .navbar {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .navbar-right {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .main-content {
+                padding: 15px;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Auth Screen -->
+    <div class="auth-container" id="authScreen">
+        <div class="auth-box">
+            <h1>אזעקה</h1>
+            <p>משחק הימורים בזמן אמת על אזעקות בישראל</p>
+
+            <div id="loginForm">
+                <div class="form-group">
+                    <label>דוא"ל</label>
+                    <input type="email" id="loginEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>סיסמה</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••">
+                </div>
+                <button class="btn" onclick="login()">כניסה</button>
+
+                <div class="toggle-auth">
+                    אין לך חשבון? <a onclick="toggleAuth()">הרשם כאן</a>
+                </div>
+            </div>
+
+            <div id="registerForm" style="display: none;">
+                <div class="form-group">
+                    <label>שם משתמש</label>
+                    <input type="text" id="registerUsername" placeholder="Choose a username">
+                </div>
+                <div class="form-group">
+                    <label>דוא"ל</label>
+                    <input type="email" id="registerEmail" placeholder="your@email.com">
+                </div>
+                <div class="form-group">
+                    <label>סיסמה</label>
+                    <input type="password" id="registerPassword" placeholder="••••••••">
+                </div>
+                <div class="form-group">
+                    <label>אישור סיסמה</label>
+                    <input type="password" id="registerPasswordConfirm" placeholder="••••••••">
+                </div>
+                <button class="btn" onclick="register()">הרשמה</button>
+
+                <div class="toggle-auth">
+                    יש לך כבר חשבון? <a onclick="toggleAuth()">כניסה</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div class="app-container" id="appContainer">
+        <div class="navbar">
+            <div class="navbar-brand">🚨 אזעקה</div>
+            <div class="navbar-right">
+                <div class="user-info">
+                    <div>
+                        <div class="user-name" id="displayUsername">User</div>
+                        <div class="balance-display" id="balanceDisplay">₪ 1,000</div>
+                    </div>
+                </div>
+                <button class="logout-btn" onclick="logout()">התנתקות</button>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div>
+                <!-- Tabs -->
+                <div class="tabs">
+                    <button class="tab-btn active" onclick="switchTab('betting')">הימור</button>
+                    <button class="tab-btn" onclick="switchTab('alerts')">אזעקות בזמן אמת</button>
+                    <button class="tab-btn" onclick="switchTab('history')">היסטוריה</button>
+                </div>
+
+                <!-- Betting Tab -->
+                <div id="betting" class="tab-content active">
+                    <div class="betting-section">
+                        <div class="section-title">צור הימור חדש</div>
+
+                        <div class="daily-bonus" id="dailyBonus">
+                            <p>🎁 בונוס יומי זמין!</p>
+                            <button onclick="claimDaily()">קבל ₪1,000</button>
+                        </div>
+
+                        <div class="map-container">
+                            <div class="map-cities" id="citiesGrid"></div>
+                        </div>
+
+                        <div class="bet-form">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>מיקום שנבחר</label>
+                                    <input type="text" id="selectedCity" readonly>
+                                </div>
+                                <div class="form-field">
+                                    <label>סכום הימור (₪)</label>
+                                    <input type="number" id="betAmount" value="100" min="10" oninput="updatePreview()">
+                                    <div class="amount-preview" id="amountPreview">אם תצודק: ₪ 300</div>
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label>שעה התחלה</label>
+                                    <input type="time" id="startTime">
+                                </div>
+                                <div class="form-field">
+                                    <label>טווח: 60 דקות</label>
+                                    <input type="text" value="60 דקות" readonly>
+                                </div>
+                            </div>
+
+                            <div class="rules-box">
+                                <strong>📋 חוקי המשחק:</strong><br>
+                                ✓ אי-ביטול - לא ניתן לבטל הימור<br>
+                                ✓ זמן עתידי בלבד<br>
+                                ✓ ניצחון = סכום × 3<br>
+                                ✓ נתונים מ-API של פיקוד העורף
+                            </div>
+
+                            <button class="place-bet-btn" onclick="placeBet()">הצב הימור</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Alerts Tab -->
+                <div id="alerts" class="tab-content">
+                    <div class="alerts-section">
+                        <div class="section-title">אזעקות בזמן אמת</div>
+                        <div id="alertsContainer">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">🔔</div>
+                                <p>טוען אזעקות מהשרת...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="history" class="tab-content">
+                    <div class="bets-history">
+                        <div class="section-title">היסטוריה של הימורים</div>
+                        <div id="historyContainer">
+                            <div class="empty-state">
+                                <div class="empty-state-icon">📊</div>
+                                <p>עדיין אין הימורים</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Leaderboard Sidebar -->
+            <div class="leaderboard-container">
+                <div class="leaderboard-title">🏆 לוח דירוג</div>
+                <div id="leaderboard">
+                    <div style="text-align: center; color: #999; padding: 20px; font-size: 12px;">
+                        טוען דירוג...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cities data
+        const cities = [
+            { id: 1, name: 'פתח תקווה', emoji: '🏙️' },
+            { id: 2, name: 'תל אביב', emoji: '🌊' },
+            { id: 3, name: 'ירושלים', emoji: '⛪' },
+            { id: 4, name: 'חיפה', emoji: '🏔️' },
+            { id: 5, name: 'באר שבע', emoji: '🏜️' },
+            { id: 6, name: 'אשקלון', emoji: '🌴' },
+            { id: 7, name: 'אשדוד', emoji: '⚓' },
+            { id: 8, name: 'רמלה', emoji: '🏘️' },
+            { id: 9, name: 'עפולה', emoji: '🌾' },
+            { id: 10, name: 'בני בראק', emoji: '📚' }
+        ];
+
+        // App state
+        let currentUser = null;
+        let selectedCity = null;
+        let users = JSON.parse(localStorage.getItem('users')) || {};
+        let bets = JSON.parse(localStorage.getItem('bets')) || {};
+        let alerts = [];
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            renderCities();
+            setCurrentTime();
+            setInterval(setCurrentTime, 60000);
+            setInterval(fetchAlerts, 30000);
+            fetchAlerts();
+            checkUser();
+        });
+
+        // Auth functions
+        function toggleAuth() {
+            document.getElementById('loginForm').style.display = 
+                document.getElementById('loginForm').style.display === 'none' ? 'block' : 'none';
+            document.getElementById('registerForm').style.display = 
+                document.getElementById('registerForm').style.display === 'none' ? 'block' : 'none';
+        }
+
+        function register() {
+            const username = document.getElementById('registerUsername').value.trim();
+            const email = document.getElementById('registerEmail').value.trim();
+            const password = document.getElementById('registerPassword').value;
+            const passwordConfirm = document.getElementById('registerPasswordConfirm').value;
+
+            if (!username || !email || !password) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            if (password !== passwordConfirm) {
+                showNotification('Passwords do not match', 'error');
+                return;
+            }
+
+            if (users[email]) {
+                showNotification('Email already registered', 'error');
+                return;
+            }
+
+            users[email] = {
+                username,
+                email,
+                password: btoa(password),
+                balance: 1000,
+                lastDaily: new Date().getTime()
+            };
+
+            localStorage.setItem('users', JSON.stringify(users));
+            currentUser = users[email];
+            currentUser.email = email;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('currentUserEmail', email);
+
+            showApp();
+            showNotification('Account created successfully!', 'success');
+        }
+
+        function login() {
+            const email = document.getElementById('loginEmail').value.trim();
+            const password = document.getElementById('loginPassword').value;
+
+            if (!email || !password) {
+                showNotification('Please fill all fields', 'error');
+                return;
+            }
+
+            if (!users[email] || users[email].password !== btoa(password)) {
+                showNotification('Invalid email or password', 'error');
+                return;
+            }
+
+            currentUser = users[email];
+            currentUser.email = email;
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            localStorage.setItem('currentUserEmail', email);
+
+            showApp();
+            showNotification('Logged in successfully!', 'success');
+        }
+
+        function logout() {
+            currentUser = null;
+            localStorage.removeItem('currentUser');
+            localStorage.removeItem('currentUserEmail');
+            document.getElementById('authScreen').style.display = 'flex';
+            document.getElementById('appContainer').classList.remove('active');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('registerForm').style.display = 'none';
+        }
+
+        function checkUser() {
+            const email = localStorage.getItem('currentUserEmail');
+            if (email && users[email]) {
+                currentUser = users[email];
+                currentUser.email = email;
+                showApp();
+            }
+        }
+
+        function showApp() {
+            document.getElementById('authScreen').style.display = 'none';
+            document.getElementById('appContainer').classList.add('active');
+            updateBalance();
+            updateLeaderboard();
+            renderHistory();
+        }
+
+        // Betting functions
+        function renderCities() {
+            const grid = document.getElementById('citiesGrid');
+            grid.innerHTML = cities.map(city => `
+                <button class="city-btn" onclick="selectCity('${city.name}', this)">
+                    ${city.emoji}<br>${city.name}
+                </button>
+            `).join('');
+        }
+
+        function selectCity(name, element) {
+            document.querySelectorAll('.city-btn').forEach(btn => btn.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedCity = name;
+            document.getElementById('selectedCity').value = name;
+        }
+
+        function updatePreview() {
+            const amount = parseInt(document.getElementById('betAmount').value) || 0;
+            document.getElementById('amountPreview').textContent = `אם תצודק: ₪ ${amount * 3}`;
+        }
+
+        function setCurrentTime() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('startTime').value = `${hours}:${minutes}`;
+        }
+
+        function placeBet() {
+            if (!selectedCity) {
+                showNotification('Please select a city', 'error');
+                return;
+            }
+
+            const amount = parseInt(document.getElementById('betAmount').value);
+            const startTime = document.getElementById('startTime').value;
+
+            if (!amount || amount < 10 || amount > currentUser.balance) {
+                showNotification('Invalid amount', 'error');
+                return;
+            }
+
+            if (!startTime) {
+                showNotification('Please select a time', 'error');
+                return;
+            }
+
+            // Validate time is in future
+            const [hours, minutes] = startTime.split(':');
+            const betStart = new Date();
+            betStart.setHours(parseInt(hours), parseInt(minutes), 0);
+
+            if (betStart <= new Date()) {
+                showNotification('Time must be in the future', 'error');
+                return;
+            }
+
+            // Create bet
+            const bet = {
+                id: Date.now(),
+                city: selectedCity,
+                amount,
+                startTime,
+                endTime: String((parseInt(hours) + 1) % 24).padStart(2, '0') + ':00',
+                placedAt: new Date().toISOString(),
+                status: 'pending',
+                result: null,
+                payout: 0
+            };
+
+            currentUser.balance -= amount;
+            users[currentUser.email] = currentUser;
+            localStorage.setItem('users', JSON.stringify(users));
+
+            if (!bets[currentUser.email]) bets[currentUser.email] = [];
+            bets[currentUser.email].push(bet);
+            localStorage.setItem('bets', JSON.stringify(bets));
+
+            // Check bet after time
+            checkBetResult(bet);
+
+            updateBalance();
+            renderHistory();
+            document.getElementById('betAmount').value = 100;
+            document.getElementById('selectedCity').value = '';
+            selectedCity = null;
+            document.querySelectorAll('.city-btn').forEach(btn => btn.classList.remove('selected'));
+
+            showNotification('Bet placed successfully!', 'success');
+        }
+
+        function checkBetResult(bet) {
+            const [hours, minutes] = bet.startTime.split(':');
+            const betStart = new Date();
+            betStart.setHours(parseInt(hours), parseInt(minutes), 0);
+
+            setTimeout(() => {
+                // Check if there was an alarm in this period
+                const relevantAlerts = alerts.filter(alert => {
+                    const alertTime = new Date(alert.time);
+                    return alertTime >= betStart && 
+                           alertTime < new Date(betStart.getTime() + 60 * 60 * 1000) &&
+                           alert.cities.some(c => c.includes(bet.city));
+                });
+
+                const won = relevantAlerts.length > 0;
+                bet.status = 'completed';
+                bet.result = won ? 'win' : 'loss';
+
+                if (won) {
+                    bet.payout = bet.amount * 3;
+                    currentUser.balance += bet.payout;
+                } else {
+                    bet.payout = 0;
+                }
+
+                users[currentUser.email] = currentUser;
+                localStorage.setItem('users', JSON.stringify(users));
+                localStorage.setItem('bets', JSON.stringify(bets));
+
+                updateBalance();
+                updateLeaderboard();
+                renderHistory();
+
+                showNotification(`Bet ${won ? 'WON' : 'LOST'}! ${won ? '+₪' + bet.payout : '-₪' + bet.amount}`, won ? 'success' : 'error');
+            }, (betStart - new Date()));
+        }
+
+        // Alerts
+        function fetchAlerts() {
+            // Array of CORS proxies to try
+            const corsProxies = [
+                url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+                url => `https://thingproxy.freeboard.io/fetch/${url}`,
+                url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`,
+                url => `https://cors-anywhere.herokuapp.com/${url}`
+            ];
+
+            const apiUrl = 'https://www.oref.org.il/WarningMessages/alertsHistory/Alerts.json';
+            let proxyIndex = 0;
+
+            function tryProxy() {
+                if (proxyIndex >= corsProxies.length) {
+                    console.log('All CORS proxies failed, using simulated data');
+                    useDemoAlerts();
+                    return;
+                }
+
+                const proxyUrl = corsProxies[proxyIndex](apiUrl);
+                console.log(`Trying proxy ${proxyIndex + 1}...`);
+
+                fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                })
+                .then(r => {
+                    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                    return r.text();
+                })
+                .then(text => {
+                    try {
+                        const data = JSON.parse(text);
+                        
+                        if (data && typeof data === 'object') {
+                            const alertsArray = [];
+                            
+                            // Parse Pikud Oref JSON format
+                            for (const [key, value] of Object.entries(data)) {
+                                if (value && value.data) {
+                                    const timestamp = parseInt(key);
+                                    if (!isNaN(timestamp)) {
+                                        alertsArray.push({
+                                            time: new Date(timestamp).toISOString(),
+                                            cities: parseAlertCities(value.data),
+                                            data: value.data
+                                        });
+                                    }
+                                }
+                            }
+
+                            if (alertsArray.length > 0) {
+                                alerts = alertsArray.slice(0, 50);
+                                renderAlerts();
+                                console.log(`✅ Successfully fetched ${alerts.length} REAL alerts from Pikud Oref!`);
+                                return;
+                            }
+                        }
+                        throw new Error('Invalid data format');
+                    } catch (e) {
+                        throw new Error('Parse error: ' + e.message);
+                    }
+                })
+                .catch(err => {
+                    console.log(`Proxy ${proxyIndex + 1} failed: ${err.message}`);
+                    proxyIndex++;
+                    tryProxy();
+                });
+            }
+
+            tryProxy();
+        }
+
+        function useDemoAlerts() {
+            // Simulated realistic alerts based on actual patterns
+            const demoAlerts = [
+                { 
+                    time: new Date().toISOString(), 
+                    cities: ['פתח תקווה', 'רמלה', 'כפר סבא'],
+                    data: 'פתח תקווה,רמלה,כפר סבא'
+                },
+                { 
+                    time: new Date(Date.now() - 5*60000).toISOString(), 
+                    cities: ['תל אביב', 'בת ים'],
+                    data: 'תל אביב,בת ים'
+                },
+                { 
+                    time: new Date(Date.now() - 12*60000).toISOString(), 
+                    cities: ['ירושלים'],
+                    data: 'ירושלים'
+                },
+                { 
+                    time: new Date(Date.now() - 18*60000).toISOString(), 
+                    cities: ['חיפה', 'קריית'],
+                    data: 'חיפה'
+                },
+                { 
+                    time: new Date(Date.now() - 25*60000).toISOString(), 
+                    cities: ['באר שבע', 'אשקלון'],
+                    data: 'באר שבע,אשקלון'
+                },
+                { 
+                    time: new Date(Date.now() - 32*60000).toISOString(), 
+                    cities: ['אשדוד', 'ראשון לציון'],
+                    data: 'אשדוד'
+                },
+                { 
+                    time: new Date(Date.now() - 40*60000).toISOString(), 
+                    cities: ['עפולה', 'בני בראק'],
+                    data: 'עפולה'
+                },
+                { 
+                    time: new Date(Date.now() - 48*60000).toISOString(), 
+                    cities: ['נתניה', 'הרצליה'],
+                    data: 'נתניה'
+                }
+            ];
+
+            alerts = demoAlerts;
+            renderAlerts();
+            console.log('📊 Using simulated alerts (demo mode)');
+        }
+
+        function parseAlertCities(alertData) {
+            if (typeof alertData !== 'string') {
+                return Array.isArray(alertData) ? alertData : ['אזור כללי'];
+            }
+
+            // Comprehensive list of Israeli cities
+            const israelCities = [
+                'פתח תקווה', 'תל אביב', 'ירושלים', 'חיפה', 'באר שבע',
+                'אשקלון', 'אשדוד', 'רמלה', 'עפולה', 'בני בראק',
+                'ראשון לציון', 'פתח תקוה', 'נתניה', 'רחובות', 'בת ים',
+                'הרצליה', 'כרמיאל', 'עכו', 'צפת', 'טבריה',
+                'נצרת', 'קרית שמונה', 'קריית אונו', 'ראם', 'קלנסווה',
+                'קריית גת', 'קיסריה', 'ערד', 'אילת', 'גדרה',
+                'יד השמונה', 'כנרת', 'מנחמיה', 'ספיר', 'קדומים',
+                'שומרון', 'ביתר עילית', 'מודיעין', 'רעות', 'מטולה',
+                'כפר סבא', 'ראש העין', 'תל מונד', 'גבעתיים', 'בנימינה',
+                'כסיפה', 'אופקים', 'אום אל-פאחם', 'סכנין', 'ביאנקה'
+            ];
+
+            const foundCities = [];
+            for (const city of israelCities) {
+                if (alertData.includes(city)) {
+                    foundCities.push(city);
+                }
+            }
+
+            return foundCities.length > 0 ? foundCities : ['אזור כללי'];
+        }
+
+        function renderAlerts() {
+            const container = document.getElementById('alertsContainer');
+            if (alerts.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">✅</div><p>No active alerts</p></div>';
+                return;
+            }
+
+            container.innerHTML = alerts.slice(0, 20).map(alert => `
+                <div class="alert-item">
+                    <div class="alert-time">⏰ ${new Date(alert.time).toLocaleTimeString('he-IL')}</div>
+                    <div class="alert-city">🚨 ${alert.cities.join(', ')}</div>
+                </div>
+            `).join('');
+        }
+
+        // History
+        function renderHistory() {
+            const container = document.getElementById('historyContainer');
+            const userBets = (bets[currentUser.email] || []).sort((a, b) => b.id - a.id);
+
+            if (userBets.length === 0) {
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">📊</div><p>No bets yet</p></div>';
+                return;
+            }
+
+            container.innerHTML = userBets.map(bet => `
+                <div class="bet-card">
+                    <div class="bet-icon">${bet.status === 'pending' ? '⏳' : (bet.result === 'win' ? '🎉' : '😢')}</div>
+                    <div class="bet-details">
+                        <div class="bet-location">${bet.city}</div>
+                        <div class="bet-time">⏰ ${bet.startTime} - ${bet.endTime}</div>
+                        <div class="bet-amount">💰 ₪${bet.amount}</div>
+                    </div>
+                    <div class="bet-status">
+                        <span class="status-badge status-${bet.status === 'pending' ? 'pending' : (bet.result === 'win' ? 'win' : 'loss')}">
+                            ${bet.status === 'pending' ? 'Pending' : (bet.result === 'win' ? 'Win' : 'Loss')}
+                        </span>
+                        <div class="payout" style="color: ${bet.result === 'win' ? '#10b981' : '#999'}">
+                            ${bet.result === 'win' ? '+' : '-'}₪${bet.payout || bet.amount}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Leaderboard
+        function updateLeaderboard() {
+            const leaderboard = Object.entries(users)
+                .map(([email, user]) => ({
+                    username: user.username,
+                    balance: user.balance,
+                    email
+                }))
+                .sort((a, b) => b.balance - a.balance)
+                .slice(0, 10);
+
+            const container = document.getElementById('leaderboard');
+            container.innerHTML = leaderboard.map((user, idx) => {
+                let rankClass = '';
+                let rankSymbol = idx + 1;
+                if (idx === 0) { rankClass = 'gold'; rankSymbol = '🥇'; }
+                else if (idx === 1) { rankClass = 'silver'; rankSymbol = '🥈'; }
+                else if (idx === 2) { rankClass = 'bronze'; rankSymbol = '🥉'; }
+
+                return `
+                    <div class="leaderboard-item">
+                        <div class="rank ${rankClass}">${rankSymbol}</div>
+                        <div class="leaderboard-user-name">${user.username}</div>
+                        <div class="leaderboard-balance">₪${user.balance.toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // UI functions
+        function updateBalance() {
+            document.getElementById('displayUsername').textContent = currentUser.username;
+            document.getElementById('balanceDisplay').textContent = `₪ ${currentUser.balance.toLocaleString()}`;
+
+            // Check daily bonus
+            const lastDaily = currentUser.lastDaily;
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const lastDailyDate = new Date(lastDaily);
+            lastDailyDate.setHours(0, 0, 0, 0);
+
+            if (today > lastDailyDate) {
+                document.getElementById('dailyBonus').classList.add('available');
+            } else {
+                document.getElementById('dailyBonus').style.display = 'none';
+            }
+        }
+
+        function claimDaily() {
+            currentUser.balance += 1000;
+            currentUser.lastDaily = new Date().getTime();
+            users[currentUser.email] = currentUser;
+            localStorage.setItem('users', JSON.stringify(users));
+
+            document.getElementById('dailyBonus').style.display = 'none';
+            updateBalance();
+            updateLeaderboard();
+            showNotification('Daily bonus claimed! +₪1000', 'success');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(tab).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function showNotification(message, type = 'success') {
+            const notif = document.createElement('div');
+            notif.className = `notification ${type}`;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+
+            setTimeout(() => notif.remove(), 4000);
+        }
+    </script>
+</body>
+</html>
